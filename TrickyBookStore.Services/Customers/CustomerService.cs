@@ -17,12 +17,16 @@ namespace TrickyBookStore.Services.Customers
         }
         public Customer GetCustomerById(long id)
         {
-            foreach (var customer in allCustomers)
+            var customer = allCustomers.FirstOrDefault(c => c.Id == id);
+            if (customer != null)
             {
-                if (customer.Id == id)
-                {
-                    return customer;
-                }
+                // customer found
+                return customer;
+            }
+            else
+            {
+                // customer not found
+                return null;
             }
             throw new NotImplementedException();
         }

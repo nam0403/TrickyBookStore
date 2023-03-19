@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using TrickyBookStore.Models;
 using TrickyBookStore.Services.Store;
 namespace TrickyBookStore.Services.Books
@@ -10,17 +11,7 @@ namespace TrickyBookStore.Services.Books
         public IList<Book> GetBooks(params long[] ids)
         {
             IList<Book> books = new List<Book>();
-            foreach (var book in allBooks)
-            {
-                foreach (var id in ids)
-                {
-                    if (book.Id == id)
-                    {
-                        books.Add(book);
-                    }
-
-                }
-            }
+            books = allBooks.Where(book => ids.Contains(book.Id)).ToList();
             return books;
             throw new NotImplementedException();
         }
