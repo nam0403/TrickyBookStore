@@ -33,16 +33,8 @@ namespace TrickyBookStore.Services.Payment
                 IList<PurchaseTransaction> customerTransactions = PurchaseTransactionService.GetPurchaseTransactions(customerId, fromDate, toDate);
                 Customer customer = CustomerService.GetCustomerById(customerId);
                 IList<Subscription> customerSubcription = GetPriority(SubscriptionService.GetSubscriptions(customer.SubscriptionIds.ToArray()));
-                var bookIds = GetBooksId(customerTransactions);
-                IList<Book> books = BookService.GetBooks(bookIds.ToArray());
-                double subcriptionPayment = 0;
-                double bookPayment = 0;
-                foreach (var sub in customerSubcription)
-                {
-                    subcriptionPayment += sub.PriceDetails["FixPrice"];
-                }
-                bookPayment = test(customerSubcription, books, bookPayment);
-                return subcriptionPayment + bookPayment;
+                
+                return CalculateTotalPayment(customerSubcription, customerTransactions);
             }
             catch
             {
@@ -62,21 +54,21 @@ namespace TrickyBookStore.Services.Payment
                 }
                 else
                 {
-                    switch (subscription.SubscriptionType.ToString())
+                    switch (subscription.SubscriptionType)
                     {
-                        case "Free":
+                        case SubscriptionTypes.Free:
                             if (!book.IsOld)
                                 bookPayment += CalculateBookPrice(book, subscription.PriceDetails["DiscountBuyNewBook"]);
                             else
                                 bookPayment += CalculateBookPrice(book, subscription.PriceDetails["DiscountBuyOldBook"]);
                             break;
-                        case "Paid":
+                        case SubscriptionTypes.Paid:
                             if (!book.IsOld)
                                 bookPayment += book.Price;
                             else 
                                 bookPayment += book.Price * subscription.PriceDetails["FeeCharge"];
                             break;
-                        case "CategoryAddicted":
+                        case SubscriptionTypes.CategoryAddicted:
                             if (book.CategoryId != subscription.BookCategoryId || !book.IsOld && book.CategoryId == subscription.BookCategoryId)
                             {
                                 bookPayment += book.Price;
@@ -88,22 +80,34 @@ namespace TrickyBookStore.Services.Payment
             return bookPayment;
         }
 
-        public double test(IList<Subscription> customerSubcription , IList<Book> books, double testPrice)
+        public double CalculateTotalPayment(IList<Subscription> customerSubscriptions, IList<PurchaseTransaction> customerTransactions)
         {
-            if (customerSubcription.Count == 1)
+            double subscriptionPayment = 0;
+            double bookPayment = 0;
+            var customerPurchaseBooks = SortBook(customerTransactions);
+
+            // Iterate over a copy of the customerSubscriptions list, so we can remove items from the original list safely
+            foreach (var subscription in customerSubscriptions)
             {
-                testPrice = CalculateBookPayment(customerSubcription.First(), books, testPrice);
-            }
-            else
-            {
-                foreach ( var subscription in  customerSubcription )
+                subscriptionPayment += subscription.PriceDetails["FixPrice"];
+                bookPayment += CalculateBookPayment(subscription, customerPurchaseBooks, bookPayment);
+                Console.WriteLine("Subcription Name: " + subscription.SubscriptionType);
+                Console.WriteLine("Book payment is " + bookPayment);
+                Console.WriteLine("Customer subscription price is " + subscriptionPayment);
+                Console.WriteLine("The remain book is " + customerPurchaseBooks.Count);
+                foreach (var purchaseTransaction in customerTransactions)
                 {
-                    testPrice += CalculateBookPayment(subscription, books, testPrice);
-                    /*customerSubcription.Remove(subscription);*/
+                    Book book = new Book();
+                    book = customerPurchaseBooks.FirstOrDefault(book_test => book_test.Id == purchaseTransaction.BookId);
+                    customerPurchaseBooks.Remove(book);
                 }
+                /*customerSubscriptions.Remove(subscription);*/
             }
-            return testPrice;
+
+            
+            return subscriptionPayment + bookPayment;
         }
+
 
         public double CalculateBookPrice(Book book, double discount)
         {
@@ -125,5 +129,24 @@ namespace TrickyBookStore.Services.Payment
             var orderPriority = subscriptions.OrderBy(sub => sub.Priority).ToList();
             return orderPriority;
         }
+
+        public IList<Book> SortBook(IList<PurchaseTransaction> customerTransactions)
+        {
+            var bookIds = GetBooksId(customerTransactions);
+            IList<Book> books = BookService.GetBooks(bookIds.ToArray());
+            // Create a dictionary that maps book IDs to their latest purchase date
+            var latestPurchaseDates = customerTransactions
+                .GroupBy(transaction => transaction.BookId)
+                .ToDictionary(group => group.Key, group => group.Max(transaction => transaction.CreatedDate));
+
+            // Sort the books based on their latest purchase date (if available)
+            var sortedBooks = books
+                .OrderBy(book => latestPurchaseDates.ContainsKey(book.Id) ? latestPurchaseDates[book.Id] : DateTimeOffset.MinValue)
+                .ToList();
+
+            return sortedBooks;
+        }
+        
+
     }
 }

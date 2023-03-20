@@ -28,12 +28,14 @@ namespace TrickyBookStore.TrickyBookServiceProvider
 
                 if (long.TryParse(input, out long customerId))
                 {
-                    Console.WriteLine("Enter 'from' date (MM/dd/yyyy):");
-                    if (DateTimeOffset.TryParse(Console.ReadLine(), out DateTimeOffset fromDate))
+                    Console.WriteLine("Enter year:");
+                    if (int.TryParse(Console.ReadLine(), out int year))
                     {
-                        Console.WriteLine("Enter 'to' date (MM/dd/yyyy):");
-                        if (DateTimeOffset.TryParse(Console.ReadLine(), out DateTimeOffset toDate))
+                        Console.WriteLine("Enter month: ");
+                        if (int.TryParse(Console.ReadLine(), out int month))
                         {
+                            DateTimeOffset fromDate = new DateTimeOffset(new DateTime(year, month, 1));
+                            DateTimeOffset toDate = new DateTimeOffset(new DateTime(year, month, DateTime.DaysInMonth(year,month)));
                             double customerPaymentAmount = _paymentService.GetPaymentAmount(customerId, fromDate, toDate);
                             Console.WriteLine($"The total customer payment amount is {customerPaymentAmount}.");
                         }

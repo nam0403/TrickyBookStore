@@ -19,9 +19,10 @@ namespace TrickyBookStore.Services.PurchaseTransactions
 
         public IList<PurchaseTransaction> GetPurchaseTransactions(long customerId, DateTimeOffset fromDate, DateTimeOffset toDate)
         {
-            IList<PurchaseTransaction> customerTransactions = new List<PurchaseTransaction>();
-            customerTransactions = allPurchaseTransactionsFromStore.Where(
-                transaction => transaction.CustomerId == customerId && transaction.CreatedDate.Month == fromDate.Month).ToList();
+            IList<PurchaseTransaction> customerTransactions = allPurchaseTransactionsFromStore.Where(
+                transaction =>  transaction.CustomerId == customerId &&
+                                transaction.CreatedDate >= fromDate &&
+                                transaction.CreatedDate <= toDate).ToList();
             return customerTransactions;
             throw new NotImplementedException();
         }
