@@ -91,10 +91,6 @@ namespace TrickyBookStore.Services.Payment
             {
                 subscriptionPayment += subscription.PriceDetails["FixPrice"];
                 bookPayment += CalculateBookPayment(subscription, customerPurchaseBooks, bookPayment);
-                Console.WriteLine("Subcription Name: " + subscription.SubscriptionType);
-                Console.WriteLine("Book payment is " + bookPayment);
-                Console.WriteLine("Customer subscription price is " + subscriptionPayment);
-                Console.WriteLine("The remain book is " + customerPurchaseBooks.Count);
                 foreach (var purchaseTransaction in customerTransactions)
                 {
                     Book book = new Book();
